@@ -1,508 +1,457 @@
 {
-  "annotations": {
-    "list": [
-      {
-        "builtIn": 1,
-        "datasource": {
-          "type": "grafana",
-          "uid": "-- Grafana --"
-        },
-        "enable": true,
-        "hide": true,
-        "iconColor": "rgba(0, 211, 255, 1)",
-        "name": "Annotations & Alerts",
-        "type": "dashboard"
-      }
-    ]
-  },
+  "annotations": { "list": [] },
   "editable": true,
   "fiscalYearStartMonth": 0,
-  "graphTooltip": 0,
+  "graphTooltip": 1,
   "id": null,
   "links": [],
-  "liveNow": false,
   "panels": [
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 100,
+      "title": "SLI / SLO / SLA",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
+          "color": { "mode": "thresholds" },
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 1
-              }
+              { "color": "red", "value": null },
+              { "color": "orange", "value": 0.7 },
+              { "color": "green", "value": 0.99 }
             ]
-          }
+          },
+          "unit": "percentunit",
+          "min": 0, "max": 1
         },
         "overrides": []
       },
-      "gridPos": {
-        "h": 8,
-        "w": 6,
-        "x": 0,
-        "y": 0
-      },
+      "gridPos": { "h": 6, "w": 4, "x": 0, "y": 1 },
       "id": 1,
       "options": {
         "colorMode": "background",
         "graphMode": "area",
         "justifyMode": "auto",
         "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
         "textMode": "auto"
       },
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "sum(rate(restaurant_reservations_created_total[$__rate_interval]))",
-          "legendFormat": "reservations/s",
+          "expr": "sum(rate(flask_http_request_total{job=\"payment\",status=\"200\"}[5m])) / clamp_min(sum(rate(flask_http_request_total{job=\"payment\"}[5m])), 0.001)",
+          "legendFormat": "Taux de succès",
           "refId": "A"
         }
       ],
-      "title": "Reservation Throughput",
+      "title": "SLI — Taux de succès paiements",
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
+          "color": { "mode": "thresholds" },
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "orange",
-                "value": 0.02
-              },
-              {
-                "color": "red",
-                "value": 0.05
-              }
-            ]
-          },
-          "unit": "percentunit"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 6,
-        "x": 6,
-        "y": 0
-      },
-      "id": 2,
-      "options": {
-        "colorMode": "background",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "auto"
-      },
-      "targets": [
-        {
-          "expr": "sum(rate(restaurant_payments_processed_total{outcome=\"failure\"}[$__rate_interval])) / clamp_min(sum(rate(restaurant_payments_processed_total[$__rate_interval])), 0.0001)",
-          "legendFormat": "payment_error_rate",
-          "refId": "A"
-        }
-      ],
-      "title": "Payment Error Rate",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "orange",
-                "value": 1
-              },
-              {
-                "color": "red",
-                "value": 2
-              }
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 1.5 },
+              { "color": "red", "value": 2.5 }
             ]
           },
           "unit": "s"
         },
         "overrides": []
       },
-      "gridPos": {
-        "h": 8,
-        "w": 6,
-        "x": 12,
-        "y": 0
+      "gridPos": { "h": 6, "w": 4, "x": 4, "y": 1 },
+      "id": 2,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
       },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(flask_http_request_duration_seconds_bucket{job=\"payment\"}[5m])))",
+          "legendFormat": "P95",
+          "refId": "A"
+        }
+      ],
+      "title": "SLI — Latence paiement P95",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "orange", "value": 0.99 },
+              { "color": "green", "value": 0.995 }
+            ]
+          },
+          "unit": "percentunit",
+          "min": 0, "max": 1
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 6, "w": 4, "x": 8, "y": 1 },
       "id": 3,
       "options": {
         "colorMode": "background",
         "graphMode": "area",
         "justifyMode": "auto",
         "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
         "textMode": "auto"
       },
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(restaurant_payment_processing_seconds_bucket[$__rate_interval])))",
-          "legendFormat": "payment_p95",
+          "expr": "sum(rate(flask_http_request_total{job=~\"waiter|payment|reservation\",status!~\"5..\"}[5m])) / clamp_min(sum(rate(flask_http_request_total{job=~\"waiter|payment|reservation\"}[5m])), 0.001)",
+          "legendFormat": "Disponibilité",
           "refId": "A"
         }
       ],
-      "title": "Payment Latency P95",
+      "title": "SLI — Disponibilité API (hors 5xx)",
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
+          "color": { "mode": "thresholds" },
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 0.1 },
+              { "color": "red", "value": 0.25 }
             ]
-          }
+          },
+          "unit": "percentunit",
+          "min": 0, "max": 1
         },
         "overrides": []
       },
-      "gridPos": {
-        "h": 8,
-        "w": 6,
-        "x": 18,
-        "y": 0
-      },
+      "gridPos": { "h": 6, "w": 4, "x": 12, "y": 1 },
       "id": 4,
       "options": {
         "colorMode": "background",
         "graphMode": "area",
         "justifyMode": "auto",
         "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
         "textMode": "auto"
       },
       "targets": [
         {
-          "expr": "restaurant_active_reservations",
-          "legendFormat": "active_reservations",
+          "expr": "sum(rate(flask_http_request_total{job=\"payment\",status=~\"5..\"}[5m])) / clamp_min(sum(rate(flask_http_request_total{job=\"payment\"}[5m])), 0.001)",
+          "legendFormat": "Taux d'erreur",
           "refId": "A"
         }
       ],
-      "title": "Active Reservations",
+      "title": "SLI — Taux d'erreur paiements (5xx)",
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 12,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 2,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
+          "color": { "mode": "thresholds" },
+          "mappings": [
+            { "options": { "0": { "text": "DOWN" } }, "type": "value" },
+            { "options": { "1": { "text": "UP" } }, "type": "value" },
+            { "options": { "2": { "text": "UP" } }, "type": "value" },
+            { "options": { "3": { "text": "UP" } }, "type": "value" }
+          ],
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
+              { "color": "red", "value": null },
+              { "color": "orange", "value": 1 },
+              { "color": "green", "value": 3 }
             ]
           }
         },
         "overrides": []
       },
-      "gridPos": {
-        "h": 10,
-        "w": 12,
-        "x": 0,
-        "y": 8
-      },
+      "gridPos": { "h": 6, "w": 4, "x": 16, "y": 1 },
       "id": 5,
       "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "none"
-        }
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
       },
       "targets": [
         {
-          "expr": "sum by (status) (rate(restaurant_reservation_status_transitions_total[$__rate_interval]))",
-          "legendFormat": "{{status}}",
+          "expr": "count(up{job=~\"waiter|payment|reservation\"} == 1)",
+          "legendFormat": "Services actifs",
           "refId": "A"
         }
       ],
-      "title": "Reservation Status Flow",
+      "title": "Services UP / 3",
+      "type": "stat"
+    },
+    {
+      "gridPos": { "h": 6, "w": 4, "x": 20, "y": 1 },
+      "id": 6,
+      "options": {
+        "content": "## SLO & SLA\n\n| SLI | SLO | SLA |\n|-----|-----|-----|\n| Succès paiements | ≥ 99 % | Crédit 10 % si < 99 % |\n| Latence P95 paiement | < 1,5 s | Crédit 10 % si > 1,5 s |\n| Disponibilité API | ≥ 99,5 % | Crédit 20 % si < 99 % |\n| Taux erreur 5xx | < 5 % | Crédit 10 % si > 10 % |",
+        "mode": "markdown"
+      },
+      "title": "Contrat SLO / SLA",
+      "type": "text"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 7 },
+      "id": 101,
+      "title": "Métriques HTTP applicatives",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "line", "lineWidth": 2, "fillOpacity": 10,
+            "gradientMode": "none", "showPoints": "never", "spanNulls": false,
+            "stacking": { "mode": "none" }
+          },
+          "unit": "percentunit", "min": 0, "max": 1
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "SLO 99 %" },
+            "properties": [
+              { "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } },
+              { "id": "custom.lineStyle", "value": { "dash": [8, 4], "fill": "dash" } }
+            ]
+          }
+        ]
+      },
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 8 },
+      "id": 7,
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "none" }
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(flask_http_request_total{job=\"payment\",status=\"200\"}[$__rate_interval])) / clamp_min(sum(rate(flask_http_request_total{job=\"payment\"}[$__rate_interval])), 0.001)",
+          "legendFormat": "Taux de succès",
+          "refId": "A"
+        },
+        {
+          "expr": "vector(0.99)",
+          "legendFormat": "SLO 99 %",
+          "refId": "B"
+        }
+      ],
+      "title": "Taux de succès paiements vs SLO",
       "type": "timeseries"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
+          "color": { "mode": "palette-classic" },
           "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "bars",
-            "fillOpacity": 70,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "normal"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
+            "drawStyle": "line", "lineWidth": 2, "fillOpacity": 10,
+            "gradientMode": "none", "showPoints": "never", "spanNulls": false,
+            "stacking": { "mode": "none" }
           },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
+          "unit": "s"
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "SLO 1.5 s" },
+            "properties": [
+              { "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } },
+              { "id": "custom.lineStyle", "value": { "dash": [8, 4], "fill": "dash" } }
             ]
           }
+        ]
+      },
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 8 },
+      "id": 8,
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "none" }
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum by (le) (rate(flask_http_request_duration_seconds_bucket{job=\"payment\"}[$__rate_interval])))",
+          "legendFormat": "P50",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(flask_http_request_duration_seconds_bucket{job=\"payment\"}[$__rate_interval])))",
+          "legendFormat": "P95",
+          "refId": "B"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(flask_http_request_duration_seconds_bucket{job=\"payment\"}[$__rate_interval])))",
+          "legendFormat": "P99",
+          "refId": "C"
+        },
+        {
+          "expr": "vector(1.5)",
+          "legendFormat": "SLO 1.5 s",
+          "refId": "D"
+        }
+      ],
+      "title": "Latence paiement P50 / P95 / P99 vs SLO",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "line", "lineWidth": 2, "fillOpacity": 10,
+            "gradientMode": "none", "showPoints": "never", "spanNulls": false,
+            "stacking": { "mode": "none" }
+          },
+          "unit": "reqps"
         },
         "overrides": []
       },
-      "gridPos": {
-        "h": 10,
-        "w": 12,
-        "x": 12,
-        "y": 8
-      },
-      "id": 6,
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 17 },
+      "id": 9,
       "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "none"
-        }
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "none" }
       },
       "targets": [
         {
-          "expr": "sum by (service, dependency) (rate(restaurant_dependency_failures_total[$__rate_interval]))",
-          "legendFormat": "{{service}} -> {{dependency}}",
+          "expr": "sum by (job) (rate(flask_http_request_total[$__rate_interval]))",
+          "legendFormat": "{{job}}",
           "refId": "A"
         }
       ],
-      "title": "Dependency Failure Rate",
+      "title": "Débit requêtes HTTP par service (req/s)",
       "type": "timeseries"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
+          "color": { "mode": "palette-classic" },
           "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "CPU %",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 8,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 2,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
+            "drawStyle": "bars", "lineWidth": 1, "fillOpacity": 70,
+            "gradientMode": "none", "showPoints": "never", "spanNulls": false,
+            "stacking": { "mode": "normal" }
           },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 17 },
+      "id": 10,
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "none" }
+      },
+      "targets": [
+        {
+          "expr": "sum by (job, status) (rate(flask_http_request_total{status=~\"5..\"}[$__rate_interval]))",
+          "legendFormat": "{{job}} HTTP {{status}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Erreurs HTTP 5xx par service",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "line", "lineWidth": 2, "fillOpacity": 10,
+            "gradientMode": "none", "showPoints": "never", "spanNulls": false,
+            "stacking": { "mode": "none" }
+          },
+          "unit": "percentunit", "min": 0, "max": 1
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "SLO 99.5 %" },
+            "properties": [
+              { "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } },
+              { "id": "custom.lineStyle", "value": { "dash": [8, 4], "fill": "dash" } }
             ]
+          }
+        ]
+      },
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 26 },
+      "id": 11,
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "none" }
+      },
+      "targets": [
+        {
+          "expr": "sum by (job) (rate(flask_http_request_total{status!~\"5..\"}[$__rate_interval])) / clamp_min(sum by (job) (rate(flask_http_request_total[$__rate_interval])), 0.001)",
+          "legendFormat": "{{job}}",
+          "refId": "A"
+        },
+        {
+          "expr": "vector(0.995)",
+          "legendFormat": "SLO 99.5 %",
+          "refId": "B"
+        }
+      ],
+      "title": "Disponibilité par service vs SLO",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 35 },
+      "id": 102,
+      "title": "Infrastructure (cAdvisor — tous les conteneurs)",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "line", "lineWidth": 2, "fillOpacity": 8,
+            "gradientMode": "none", "showPoints": "never", "spanNulls": false,
+            "stacking": { "mode": "none" }
           },
           "unit": "percentunit"
         },
         "overrides": []
       },
-      "gridPos": {
-        "h": 10,
-        "w": 12,
-        "x": 0,
-        "y": 18
-      },
-      "id": 7,
+      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 36 },
+      "id": 12,
       "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "none"
-        }
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
       },
       "targets": [
         {
@@ -511,82 +460,28 @@
           "refId": "A"
         }
       ],
-      "title": "Container CPU Usage",
+      "title": "CPU par service (cores/s)",
       "type": "timeseries"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
+          "color": { "mode": "palette-classic" },
           "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "Memory",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 8,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 2,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
+            "drawStyle": "line", "lineWidth": 2, "fillOpacity": 8,
+            "gradientMode": "none", "showPoints": "never", "spanNulls": false,
+            "stacking": { "mode": "none" }
           },
           "unit": "decbytes"
         },
         "overrides": []
       },
-      "gridPos": {
-        "h": 10,
-        "w": 12,
-        "x": 12,
-        "y": 18
-      },
-      "id": 8,
+      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 36 },
+      "id": 13,
       "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "none"
-        }
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
       },
       "targets": [
         {
@@ -595,29 +490,80 @@
           "refId": "A"
         }
       ],
-      "title": "Container Memory Working Set",
+      "title": "Mémoire (working set) par service",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "bars", "lineWidth": 1, "fillOpacity": 60,
+            "gradientMode": "none", "showPoints": "never", "spanNulls": false,
+            "stacking": { "mode": "normal" }
+          },
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 46 },
+      "id": 14,
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "expr": "sum by (container_label_com_docker_compose_service) (rate(container_network_receive_bytes_total{container_label_com_docker_compose_service!=\"\",image!=\"\"}[$__rate_interval]))",
+          "legendFormat": "{{container_label_com_docker_compose_service}} RX",
+          "refId": "A"
+        }
+      ],
+      "title": "Réseau — Réception par service (bytes/s)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "bars", "lineWidth": 1, "fillOpacity": 60,
+            "gradientMode": "none", "showPoints": "never", "spanNulls": false,
+            "stacking": { "mode": "normal" }
+          },
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 46 },
+      "id": 15,
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "expr": "sum by (container_label_com_docker_compose_service) (rate(container_network_transmit_bytes_total{container_label_com_docker_compose_service!=\"\",image!=\"\"}[$__rate_interval]))",
+          "legendFormat": "{{container_label_com_docker_compose_service}} TX",
+          "refId": "A"
+        }
+      ],
+      "title": "Réseau — Émission par service (bytes/s)",
       "type": "timeseries"
     }
   ],
   "refresh": "10s",
   "schemaVersion": 39,
   "style": "dark",
-  "tags": [
-    "restaurant",
-    "metrics",
-    "sli"
-  ],
-  "templating": {
-    "list": []
-  },
-  "time": {
-    "from": "now-30m",
-    "to": "now"
-  },
+  "tags": ["restaurant", "metrics", "sli", "slo", "sla"],
+  "templating": { "list": [] },
+  "time": { "from": "now-1h", "to": "now" },
   "timepicker": {},
   "timezone": "",
-  "title": "Restaurant Metrics Overview",
+  "title": "Restaurant — Métriques & SLI/SLO/SLA",
   "uid": "restaurant-metrics",
-  "version": 1,
+  "version": 3,
   "weekStart": ""
 }

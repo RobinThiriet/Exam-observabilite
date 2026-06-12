@@ -27,7 +27,7 @@ services:
       - restaurant_network
 
   rabbitmq:
-    image: rabbitmq:management
+    image: rabbitmq:3.13-management
     container_name: restaurant_rabbitmq
     restart: unless-stopped
     ports:
@@ -144,7 +144,6 @@ services:
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
       - PYTHONPATH=/app
       - LOG_DIR=/var/log/restaurant
-      - PAYMENT_CHAOS_ENABLED=false
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://traces:4317
       - OTEL_SERVICE_NAME=payment_service
     depends_on:
@@ -205,16 +204,44 @@ services:
   # =========================
   # Logs
   # =========================
-  loki:
-    image: grafana/loki:3.1.1
-    container_name: loki
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.3
+    container_name: elasticsearch
     restart: unless-stopped
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
     ports:
-      - "3100:3100"
+      - "9200:9200"
     volumes:
-      - ./observability/loki/config.yml:/etc/loki/local-config.yaml:ro
-      - loki_data:/loki
-    command: -config.file=/etc/loki/local-config.yaml
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - restaurant_network
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.15.3
+    container_name: kibana
+    restart: unless-stopped
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - XPACK_SECURITY_ENABLED=false
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+    networks:
+      - restaurant_network
+
+  kibana-bootstrap:
+    image: curlimages/curl:8.8.0
+    container_name: kibana_bootstrap
+    restart: "no"
+    entrypoint: ["/bin/sh", "/scripts/bootstrap-kibana.sh"]
+    volumes:
+      - ./observability/kibana:/scripts:ro
+    depends_on:
+      - kibana
     networks:
       - restaurant_network
 
@@ -229,7 +256,7 @@ services:
       - app_logs:/logs:ro
       - fluentbit_state:/fluent-bit/state
     depends_on:
-      - loki
+      - elasticsearch
     networks:
       - restaurant_network
 
@@ -291,7 +318,6 @@ services:
       - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
     depends_on:
       - prometheus
-      - loki
       - traces
     networks:
       - restaurant_network
@@ -302,8 +328,8 @@ networks:
 
 volumes:
   postgres_data:
+  elasticsearch_data:
   fluentbit_state:
   app_logs:
-  loki_data:
   prometheus_data:
   grafana_data:
