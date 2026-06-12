@@ -45,6 +45,8 @@ services:
       dockerfile: customer/Dockerfile
     container_name: customer_service
     restart: unless-stopped
+    working_dir: /var/log/restaurant
+    command: python /app/customer/customer.py
     environment:
       - WAITER_URL=http://waiter:5001
       - PAYMENT_URL=http://payment:5003
@@ -76,6 +78,8 @@ services:
       dockerfile: waiter/Dockerfile
     container_name: waiter_service
     restart: unless-stopped
+    working_dir: /var/log/restaurant
+    command: python /app/waiter/waiter.py
     ports:
       - "5001:5001"
     environment:
@@ -105,6 +109,8 @@ services:
       dockerfile: kitchen/Dockerfile
     container_name: kitchen_service
     restart: unless-stopped
+    working_dir: /var/log/restaurant
+    command: python /app/kitchen/kitchen.py
     environment:
       - WAITER_URL=http://waiter:5001
       - PAYMENT_URL=http://payment:5003
@@ -133,6 +139,8 @@ services:
       dockerfile: payment/Dockerfile
     container_name: payment_service
     restart: unless-stopped
+    working_dir: /var/log/restaurant
+    command: python /app/payment/payment.py
     ports:
       - "5003:5003"
     environment:
@@ -162,6 +170,8 @@ services:
       dockerfile: reservation/Dockerfile
     container_name: reservation_service
     restart: unless-stopped
+    working_dir: /var/log/restaurant
+    command: python /app/reservation/reservation.py
     ports:
       - "5004:5004"
     environment:
