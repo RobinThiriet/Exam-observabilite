@@ -1,0 +1,42 @@
+global:
+  scrape_interval: 10s
+  evaluation_interval: 10s
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets:
+          - prometheus:9090
+
+  - job_name: waiter
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - waiter:5001
+
+  - job_name: payment
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - payment:5003
+
+  - job_name: reservation
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - reservation:5004
+
+  - job_name: customer
+    static_configs:
+      - targets:
+          - customer:9100
+
+  - job_name: kitchen
+    static_configs:
+      - targets:
+          - kitchen:9102
+
+  - job_name: cadvisor
+    static_configs:
+      - targets:
+          - cadvisor:8080

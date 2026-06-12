@@ -1,0 +1,66 @@
+flowchart LR
+    subgraph Client["Flux metier"]
+        customer["customer\nGenerateur de charge"]
+    end
+
+    subgraph Core["Microservices restaurant"]
+        reservation["reservation\nAPI Flask + Redis + RabbitMQ"]
+        waiter["waiter\nAPI Flask + orchestration"]
+        kitchen["kitchen\nWorker RabbitMQ"]
+        payment["payment\nAPI Flask + PostgreSQL"]
+    end
+
+    subgraph Data["Infrastructure de donnees"]
+        redis["Redis\nEtat des reservations"]
+        rabbitmq["RabbitMQ\nFiles asynchrones"]
+        postgres["PostgreSQL\nMenus + paiements"]
+    end
+
+    subgraph Obs["Observabilite"]
+        fluentbit["Fluent Bit"]
+        loki["Loki"]
+        prometheus["Prometheus"]
+        grafana["Grafana"]
+        jaeger["Jaeger"]
+        cadvisor["cAdvisor"]
+    end
+
+    customer -->|POST /reservations| reservation
+    reservation -->|cache reservation| redis
+    reservation -->|publish reservations_queue| rabbitmq
+    rabbitmq -->|consume| waiter
+    customer -->|GET /menu| waiter
+    customer -->|POST /orders| waiter
+    waiter -->|read/write| redis
+    waiter -->|read menus| postgres
+    waiter -->|publish orders_queue| rabbitmq
+    rabbitmq -->|consume| kitchen
+    kitchen -->|update status| redis
+    kitchen -->|publish kitchen_queue| rabbitmq
+    rabbitmq -->|consume| waiter
+    customer -->|POST /pay| payment
+    payment -->|save order| postgres
+    payment -->|delete reservation| redis
+
+    customer -. logs .-> fluentbit
+    reservation -. logs .-> fluentbit
+    waiter -. logs .-> fluentbit
+    kitchen -. logs .-> fluentbit
+    payment -. logs .-> fluentbit
+    fluentbit --> loki
+    loki --> grafana
+
+    customer -. metrics .-> prometheus
+    reservation -. metrics .-> prometheus
+    waiter -. metrics .-> prometheus
+    kitchen -. metrics .-> prometheus
+    payment -. metrics .-> prometheus
+    cadvisor -. metrics .-> prometheus
+    prometheus --> grafana
+
+    customer -. traces OTLP .-> jaeger
+    reservation -. traces OTLP .-> jaeger
+    waiter -. traces OTLP .-> jaeger
+    kitchen -. traces OTLP .-> jaeger
+    payment -. traces OTLP .-> jaeger
+    jaeger --> grafana

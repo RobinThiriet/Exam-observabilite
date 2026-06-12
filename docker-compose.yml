@@ -1,0 +1,309 @@
+services:
+  # =========================
+  # Infra de base
+  # =========================
+  db:
+    image: postgres:16
+    container_name: restaurant_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: restaurant
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - restaurant_network
+
+  redis:
+    image: redis:7
+    container_name: restaurant_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - restaurant_network
+
+  rabbitmq:
+    image: rabbitmq:management
+    container_name: restaurant_rabbitmq
+    restart: unless-stopped
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - restaurant_network
+
+  # =========================
+  # Microservices applicatifs
+  # =========================
+  customer:
+    build:
+      context: .
+      dockerfile: customer/Dockerfile
+    container_name: customer_service
+    restart: unless-stopped
+    environment:
+      - WAITER_URL=http://waiter:5001
+      - PAYMENT_URL=http://payment:5003
+      - RESERVATION_URL=http://reservation:5004
+      - DB_URL=postgresql://user:password@db:5432/restaurant
+      - REDIS_URL=redis://redis:6379
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - PYTHONPATH=/app
+      - LOG_DIR=/var/log/restaurant
+      - METRICS_PORT=9100
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://traces:4317
+      - OTEL_SERVICE_NAME=customer_service
+    depends_on:
+      - db
+      - redis
+      - rabbitmq
+      - waiter
+      - reservation
+      - payment
+      - traces
+    volumes:
+      - app_logs:/var/log/restaurant
+    networks:
+      - restaurant_network
+
+  waiter:
+    build:
+      context: .
+      dockerfile: waiter/Dockerfile
+    container_name: waiter_service
+    restart: unless-stopped
+    ports:
+      - "5001:5001"
+    environment:
+      - WAITER_URL=http://waiter:5001
+      - PAYMENT_URL=http://payment:5003
+      - RESERVATION_URL=http://reservation:5004
+      - DB_URL=postgresql://user:password@db:5432/restaurant
+      - REDIS_URL=redis://redis:6379
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - PYTHONPATH=/app
+      - LOG_DIR=/var/log/restaurant
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://traces:4317
+      - OTEL_SERVICE_NAME=waiter_service
+    depends_on:
+      - db
+      - redis
+      - rabbitmq
+      - traces
+    volumes:
+      - app_logs:/var/log/restaurant
+    networks:
+      - restaurant_network
+
+  kitchen:
+    build:
+      context: .
+      dockerfile: kitchen/Dockerfile
+    container_name: kitchen_service
+    restart: unless-stopped
+    environment:
+      - WAITER_URL=http://waiter:5001
+      - PAYMENT_URL=http://payment:5003
+      - RESERVATION_URL=http://reservation:5004
+      - DB_URL=postgresql://user:password@db:5432/restaurant
+      - REDIS_URL=redis://redis:6379
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - PYTHONPATH=/app
+      - LOG_DIR=/var/log/restaurant
+      - METRICS_PORT=9102
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://traces:4317
+      - OTEL_SERVICE_NAME=kitchen_service
+    depends_on:
+      - db
+      - redis
+      - rabbitmq
+      - traces
+    volumes:
+      - app_logs:/var/log/restaurant
+    networks:
+      - restaurant_network
+
+  payment:
+    build:
+      context: .
+      dockerfile: payment/Dockerfile
+    container_name: payment_service
+    restart: unless-stopped
+    ports:
+      - "5003:5003"
+    environment:
+      - WAITER_URL=http://waiter:5001
+      - PAYMENT_URL=http://payment:5003
+      - RESERVATION_URL=http://reservation:5004
+      - DB_URL=postgresql://user:password@db:5432/restaurant
+      - REDIS_URL=redis://redis:6379
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - PYTHONPATH=/app
+      - LOG_DIR=/var/log/restaurant
+      - PAYMENT_CHAOS_ENABLED=false
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://traces:4317
+      - OTEL_SERVICE_NAME=payment_service
+    depends_on:
+      - db
+      - redis
+      - rabbitmq
+      - traces
+    volumes:
+      - app_logs:/var/log/restaurant
+    networks:
+      - restaurant_network
+
+  reservation:
+    build:
+      context: .
+      dockerfile: reservation/Dockerfile
+    container_name: reservation_service
+    restart: unless-stopped
+    ports:
+      - "5004:5004"
+    environment:
+      - WAITER_URL=http://waiter:5001
+      - PAYMENT_URL=http://payment:5003
+      - RESERVATION_URL=http://reservation:5004
+      - DB_URL=postgresql://user:password@db:5432/restaurant
+      - REDIS_URL=redis://redis:6379
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - PYTHONPATH=/app
+      - LOG_DIR=/var/log/restaurant
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://traces:4317
+      - OTEL_SERVICE_NAME=reservation_service
+    depends_on:
+      - db
+      - redis
+      - rabbitmq
+      - traces
+    volumes:
+      - app_logs:/var/log/restaurant
+    networks:
+      - restaurant_network
+
+  # =========================
+  # Traces
+  # =========================
+  traces:
+    image: jaegertracing/all-in-one:1.60
+    container_name: jaeger
+    restart: unless-stopped
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    ports:
+      - "16686:16686"
+      - "4317:4317"
+      - "4318:4318"
+    networks:
+      - restaurant_network
+
+  # =========================
+  # Logs
+  # =========================
+  loki:
+    image: grafana/loki:3.1.1
+    container_name: loki
+    restart: unless-stopped
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./observability/loki/config.yml:/etc/loki/local-config.yaml:ro
+      - loki_data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - restaurant_network
+
+  fluent-bit:
+    image: fluent/fluent-bit:3.2
+    container_name: fluent-bit
+    restart: unless-stopped
+    user: root
+    volumes:
+      - ./observability/fluent-bit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf:ro
+      - ./observability/fluent-bit/parsers.conf:/fluent-bit/etc/parsers.conf:ro
+      - app_logs:/logs:ro
+      - fluentbit_state:/fluent-bit/state
+    depends_on:
+      - loki
+    networks:
+      - restaurant_network
+
+  # =========================
+  # Metrics
+  # =========================
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    container_name: cadvisor
+    restart: unless-stopped
+    privileged: true
+    ports:
+      - "8080:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+      - /dev/disk:/dev/disk:ro
+    devices:
+      - /dev/kmsg:/dev/kmsg
+    networks:
+      - restaurant_network
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: prometheus
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.enable-lifecycle
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    depends_on:
+      - waiter
+      - payment
+      - reservation
+      - cadvisor
+    networks:
+      - restaurant_network
+
+  grafana:
+    image: grafana/grafana:11.1.4
+    container_name: grafana
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+      - loki
+      - traces
+    networks:
+      - restaurant_network
+
+networks:
+  restaurant_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  fluentbit_state:
+  app_logs:
+  loki_data:
+  prometheus_data:
+  grafana_data:
