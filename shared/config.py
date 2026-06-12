@@ -47,16 +47,12 @@ class Config:
 
     def setup_logging(self, log_file="app.log"):
         """Configure logging to both stdout and a file with Trace/Span IDs."""
-        log_dir = os.environ.get("LOG_DIR", ".")
-        os.makedirs(log_dir, exist_ok=True)
-        log_path = os.path.join(log_dir, log_file)
-
         # Note: TraceID and SpanID are injected by OTel LoggingInstrumentor
         logging.basicConfig(
             level=logging.INFO,
             format='%(asctime)s - %(levelname)s - [trace_id: %(otelTraceID)s, span_id: %(otelSpanID)s] - %(module)s - %(message)s',
             handlers=[
-                logging.FileHandler(log_path),
+                logging.FileHandler(log_file),
                 logging.StreamHandler(sys.stdout)
             ],
             force=True

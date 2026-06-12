@@ -11,17 +11,18 @@ docker compose up -d --build
 Interfaces principales :
 
 - Grafana : http://localhost:3000 (`admin` / `admin`)
+- Kibana : http://localhost:5601
 - Prometheus : http://localhost:9090
 - Jaeger : http://localhost:16686
 - RabbitMQ : http://localhost:15672
 
 ## Contenu livre
 
-- Dashboards Grafana provisionnes automatiquement :
-  - `Restaurant Metrics Overview`
-  - `Restaurant Logs Overview`
-  - `Restaurant Traces Overview`
-- Centralisation des logs applicatifs via Fluent Bit vers Loki
+- Dashboards provisionnes automatiquement :
+  - Grafana : `Restaurant SLI SLO SLA Overview`
+  - Grafana : `Restaurant Traces & Root Cause`
+  - Kibana : `Restaurant Logs Dashboard`
+- Centralisation des logs applicatifs via Fluent Bit vers Elasticsearch
 - Tracing distribue OpenTelemetry vers Jaeger
 - Metriques Prometheus applicatives et d'infrastructure
 - Rapport projet : [docs/RAPPORT_PROJET.md](/root/Exam-observabilite/docs/RAPPORT_PROJET.md)
@@ -32,7 +33,7 @@ Interfaces principales :
 
 - `observability/prometheus/` : scraping Prometheus
 - `observability/fluent-bit/` : collecte et enrichissement des logs
-- `observability/loki/` : stockage et indexation des logs
+- `observability/kibana/` : bootstrap du Data View et du dashboard logs
 - `observability/grafana/` : datasources et dashboards provisionnes
 
 ## Rejouer l'incident de paiement

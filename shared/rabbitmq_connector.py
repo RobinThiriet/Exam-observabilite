@@ -7,6 +7,9 @@ import logging
 import time
 from opentelemetry import trace, propagate
 
+# Initialize logging for RabbitMQ
+Config().setup_logging("rabbitmq.log")
+
 class RabbitMQConnector(Connector):
     def __init__(self):
         super().__init__(Config().get_service("rabbitmq"))

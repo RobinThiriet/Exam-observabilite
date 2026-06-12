@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s \"http://localhost:9090/api/v1/query?query=flask_http_request_total\")",
+      "Bash(python3 -c ' *)",
+      "Bash(curl -s \"http://localhost:9090/api/v1/query?query=flask_http_request_total%7Bjob%3D%22payment%22%2Cstatus%3D%22503%22%7D\")",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('503 count:', d['data']['result'][0]['value'][1] if d['data']['result'] else 'none yet'\\)\")",
+      "Bash(curl -s http://localhost:5001/metrics)",
+      "Bash(curl -s http://localhost:5003/metrics)"
+    ]
+  }
+}

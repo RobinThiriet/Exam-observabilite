@@ -6,16 +6,10 @@ import uuid
 import json
 import threading
 import requests
-import os
 from faker import Faker
 from opentelemetry import trace
 
 from shared.config import Config
-from shared.metrics import (
-    DEPENDENCY_FAILURES,
-    RESERVATION_STATUS_TRANSITIONS,
-    start_metrics_server_if_needed,
-)
 from shared.models.ReservationModel import ReservationModel
 from shared.rabbitmq_connector import RabbitMQConnector
 from shared.redis_connector import RedisConnector
@@ -28,7 +22,6 @@ tracer = trace.get_tracer(__name__)
 
 # Then setup logging
 Config().setup_logging("customer.log")
-start_metrics_server_if_needed(int(os.environ.get("METRICS_PORT", "9100")))
 fake = Faker()
 
 def make_reservation():
@@ -50,16 +43,7 @@ def make_reservation():
         try:
             response = requests.post(url, json=reservation.to_dict())
             logging.info(f"Reservation POST status: {response.status_code}")
-            if response.status_code >= 500:
-                DEPENDENCY_FAILURES.labels(
-                    service="customer_service",
-                    dependency="reservation_service"
-                ).inc()
         except Exception as e:
-            DEPENDENCY_FAILURES.labels(
-                service="customer_service",
-                dependency="reservation_service"
-            ).inc()
             logging.error(f"Failed to make reservation: {e}")
 
 def get_menus(reservation_id):
@@ -69,17 +53,9 @@ def get_menus(reservation_id):
     try:
         response = requests.get(url, headers=headers)
         if response.status_code != 200:
-            DEPENDENCY_FAILURES.labels(
-                service="customer_service",
-                dependency="waiter_service"
-            ).inc()
             logging.error(f"Get menus failed: {response.status_code} - {response.text}")
         return response.json()
     except Exception as e:
-        DEPENDENCY_FAILURES.labels(
-            service="customer_service",
-            dependency="waiter_service"
-        ).inc()
         logging.error(f"Failed to get menus: {e}")
         return []
 
@@ -101,34 +77,16 @@ def make_order(reservation_id, menus):
     headers = {"X-Reservation-Id": str(reservation_id)}
     data = {"reservation_id": str(reservation_id), "items": menus}
     try:
-        response = requests.post(url, json=data, headers=headers)
-        if response.status_code >= 500:
-            DEPENDENCY_FAILURES.labels(
-                service="customer_service",
-                dependency="waiter_service"
-            ).inc()
+        requests.post(url, json=data, headers=headers)
     except Exception as e:
-        DEPENDENCY_FAILURES.labels(
-            service="customer_service",
-            dependency="waiter_service"
-        ).inc()
         logging.error(f"Failed to make order: {e}")
 
 def make_payment(reservation_data):
     logging.info(f"Customer {reservation_data['reservation_id']} making payment")
     url = Config().get_service("payment") + "/pay"
     try:
-        response = requests.post(url, json=reservation_data)
-        if response.status_code >= 500:
-            DEPENDENCY_FAILURES.labels(
-                service="customer_service",
-                dependency="payment_service"
-            ).inc()
+        requests.post(url, json=reservation_data)
     except Exception as e:
-        DEPENDENCY_FAILURES.labels(
-            service="customer_service",
-            dependency="payment_service"
-        ).inc()
         logging.error(f"Failed to make payment: {e}")
 
 def callback(ch, method, properties, body):
@@ -139,10 +97,6 @@ def callback(ch, method, properties, body):
         status = data.get("status")
 
         if status == Config().get_reservation_status("confirmed"):
-            RESERVATION_STATUS_TRANSITIONS.labels(
-                service="customer_service",
-                status=Config().get_reservation_status("confirmed")
-            ).inc()
             logging.info(f"Customer {res_id} received confirmed status")
             menus = get_menus(res_id)
             logging.info(f"Customer {res_id} received menus: {menus}")
@@ -164,19 +118,11 @@ def callback(ch, method, properties, body):
             logging.info(f"Customer {res_id} placed order")
             
         elif status == Config().get_reservation_status("ready"):
-            RESERVATION_STATUS_TRANSITIONS.labels(
-                service="customer_service",
-                status=Config().get_reservation_status("ready")
-            ).inc()
             # Fetch latest data from Redis
             current_data = RedisConnector().get(res_id)
             if current_data:
                 current_data["status"] = Config().get_reservation_status("served")
                 RedisConnector().set(res_id, current_data)
-                RESERVATION_STATUS_TRANSITIONS.labels(
-                    service="customer_service",
-                    status=Config().get_reservation_status("served")
-                ).inc()
                 make_payment(current_data)
 
     except Exception as e:

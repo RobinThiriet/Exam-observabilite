@@ -12,4 +12,3 @@ opentelemetry-instrumentation-sqlalchemy
 opentelemetry-instrumentation-pika
 opentelemetry-instrumentation-redis
 opentelemetry-instrumentation-logging
-prometheus-client

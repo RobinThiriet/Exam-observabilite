@@ -2,7 +2,7 @@
 
 ## 1. Resume executif
 
-L'architecture du restaurant a ete instrumentee avec une pile unifiee `Prometheus + Grafana + Loki + Fluent Bit + Jaeger + OpenTelemetry + cAdvisor`. L'objectif etait de couvrir les trois piliers de l'observabilite demandee par la consigne : metriques, logs et traces.
+L'architecture du restaurant a ete instrumentee avec une pile unifiee `Prometheus + Grafana + Fluent Bit + Elasticsearch + Kibana + Jaeger + OpenTelemetry + cAdvisor`. L'objectif etait de couvrir les trois piliers de l'observabilite demandee par la consigne : metriques, logs et traces.
 
 Le resultat permet :
 
@@ -23,8 +23,8 @@ Le resultat permet :
 
 - Les services Python ecrivent dans un volume partage `/var/log/restaurant`.
 - `Fluent Bit` collecte ces fichiers, parse le niveau de log, le `trace_id`, le `span_id` et le `reservation_id`.
-- `Loki` stocke les logs centralises.
-- `Grafana` fournit le dashboard `Restaurant Logs Overview` et une recherche plein texte exploitable.
+- `Elasticsearch` stocke les logs centralises.
+- `Kibana` fournit le dashboard logs et une recherche plein texte exploitable.
 
 ### 2.3 Traces
 
@@ -68,7 +68,7 @@ docker compose up -d --build
 | Debit | Debit de reservations | `rate(restaurant_reservations_created_total)` | Prometheus |
 | Continuite de service | Nombre de reservations actives | `restaurant_active_reservations` | Prometheus |
 | Fiabilite des dependances | Taux d'erreurs de dependances | `restaurant_dependency_failures_total` | Prometheus |
-| Investigabilite | Recherche de logs par reservation | presence du label `reservation_id` | Loki |
+| Investigabilite | Recherche de logs par reservation | presence du champ `reservation_id` | Kibana |
 | Tracabilite | Reconstitution d'un parcours distribue | trace complete HTTP + RabbitMQ + Redis + PostgreSQL | Jaeger |
 
 ### 4.2 SLO proposes
@@ -100,7 +100,7 @@ En cas de non-respect du SLA sur un mois civil :
 
 ### 5.1 Dashboard metriques
 
-`Restaurant Metrics Overview` couvre :
+`Restaurant SLI SLO SLA Overview` couvre :
 
 - debit de reservations ;
 - taux d'erreur paiement ;
@@ -112,17 +112,15 @@ En cas de non-respect du SLA sur un mois civil :
 
 ### 5.2 Dashboard logs
 
-`Restaurant Logs Overview` couvre :
+`Restaurant Logs Dashboard` dans Kibana couvre :
 
-- volume de logs par service ;
-- volume de logs par niveau ;
 - recherche plein texte ;
 - filtrage par service ;
 - correlation via `trace_id` et `reservation_id`.
 
 ### 5.3 Dashboard traces
 
-`Restaurant Traces Overview` permet :
+`Restaurant Traces & Root Cause` permet :
 
 - de coller un `trace_id` issu des logs ;
 - de visualiser la trace dans Grafana ;

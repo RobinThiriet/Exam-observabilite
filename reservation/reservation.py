@@ -2,12 +2,6 @@ from shared.config import Config
 from shared.redis_connector import RedisConnector
 from shared.rabbitmq_connector import RabbitMQConnector
 from shared.models.ReservationModel import ReservationModel
-from shared.metrics import (
-    ACTIVE_RESERVATIONS,
-    DEPENDENCY_FAILURES,
-    RESERVATIONS_CREATED,
-    RESERVATION_STATUS_TRANSITIONS,
-)
 
 import flask
 import logging
@@ -42,18 +36,8 @@ def make_reservation():
     try:
         RedisConnector().set(res_id_str, reservation.to_dict())
         RabbitMQConnector().publish(Config().get_queue("reservations"), reservation.to_dict())
-        RESERVATIONS_CREATED.inc()
-        RESERVATION_STATUS_TRANSITIONS.labels(
-            service="reservation_service",
-            status=Config().get_reservation_status("pending")
-        ).inc()
-        ACTIVE_RESERVATIONS.set(len(RedisConnector().get_all() or []))
         logging.info(f"Reservation {res_id_str} created and published")
     except Exception as e:
-        DEPENDENCY_FAILURES.labels(
-            service="reservation_service",
-            dependency="redis_or_rabbitmq"
-        ).inc()
         logging.error(f"Failed to process reservation {res_id_str}: {e}")
         return flask.jsonify({"error": "External service error"}), 500
         

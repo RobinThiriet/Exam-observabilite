@@ -3,11 +3,6 @@ from shared.redis_connector import RedisConnector
 from shared.database_connector import DatabaseConnector
 from shared.rabbitmq_connector import RabbitMQConnector
 from shared.models.ReservationModel import ReservationModel
-from shared.metrics import (
-    DEPENDENCY_FAILURES,
-    ORDERS_SUBMITTED,
-    RESERVATION_STATUS_TRANSITIONS,
-)
 
 import flask
 import threading
@@ -45,20 +40,12 @@ def callback(ch, method, properties, body):
             reservation_data["status"] = Config().get_reservation_status("confirmed")
             RedisConnector().set(reservation_id, reservation_data)
             RabbitMQConnector().publish(Config().get_queue("confirmations"), reservation_data)
-            RESERVATION_STATUS_TRANSITIONS.labels(
-                service="waiter_service",
-                status=Config().get_reservation_status("confirmed")
-            ).inc()
             logging.info(f"Reservation {reservation_id} CONFIRMED")
             
         elif status == Config().get_reservation_status("cooking"):
             reservation_data["status"] = Config().get_reservation_status("ready")
             RedisConnector().set(reservation_id, reservation_data)
             RabbitMQConnector().publish(Config().get_queue("ready"), reservation_data)
-            RESERVATION_STATUS_TRANSITIONS.labels(
-                service="waiter_service",
-                status=Config().get_reservation_status("ready")
-            ).inc()
             logging.info(f"Reservation {reservation_id} READY")
 
     except Exception as e:
@@ -89,26 +76,13 @@ def get_menu():
     
     reservation = RedisConnector().get(reservation_id)
     if not reservation:
-        DEPENDENCY_FAILURES.labels(
-            service="waiter_service",
-            dependency="redis"
-        ).inc()
         return flask.jsonify({"error": "Reservation not found"}), 404
     
     menu = DatabaseConnector().get_menu()
-    if not menu:
-        DEPENDENCY_FAILURES.labels(
-            service="waiter_service",
-            dependency="postgresql"
-        ).inc()
     
     # Update status
     reservation["status"] = Config().get_reservation_status("menu_received")
     RedisConnector().set(reservation_id, reservation)
-    RESERVATION_STATUS_TRANSITIONS.labels(
-        service="waiter_service",
-        status=Config().get_reservation_status("menu_received")
-    ).inc()
     
     return flask.jsonify([m.to_dict() for m in menu])
 
@@ -121,10 +95,6 @@ def make_order():
     
     reservation = RedisConnector().get(reservation_id)
     if not reservation:
-        DEPENDENCY_FAILURES.labels(
-            service="waiter_service",
-            dependency="redis"
-        ).inc()
         return flask.jsonify({"error": "Reservation not found"}), 404
     
     order = flask.request.json
@@ -135,11 +105,6 @@ def make_order():
     order["reservation_id"] = reservation_id
     
     RabbitMQConnector().publish(Config().get_queue("orders"), order)
-    ORDERS_SUBMITTED.inc()
-    RESERVATION_STATUS_TRANSITIONS.labels(
-        service="waiter_service",
-        status=Config().get_reservation_status("ordering")
-    ).inc()
     return flask.jsonify({"status": "order_received"}), 200
 
 if __name__ == "__main__":

@@ -1,22 +1,11 @@
 from shared.config import Config
 from shared.rabbitmq_connector import RabbitMQConnector
 from shared.redis_connector import RedisConnector
-from shared.metrics import (
-    DEPENDENCY_FAILURES,
-    KITCHEN_ORDERS_PROCESSED,
-    RESERVATION_STATUS_TRANSITIONS,
-    start_metrics_server_if_needed,
-)
 
 import threading
 import json
 import logging
-import os
 import time
-
-# Setup logging
-Config().setup_logging("kitchen.log")
-start_metrics_server_if_needed(int(os.environ.get("METRICS_PORT", "9102")))
 
 # Initialize Tracing
 from shared.tracing import init_tracer
@@ -43,17 +32,8 @@ def callback(ch, method, properties, body):
         if reservation:
             reservation["status"] = Config().get_reservation_status("cooking")
             RedisConnector().set(reservation_id, reservation)
-            KITCHEN_ORDERS_PROCESSED.inc()
-            RESERVATION_STATUS_TRANSITIONS.labels(
-                service="kitchen_service",
-                status=Config().get_reservation_status("cooking")
-            ).inc()
             logging.info(f"Reservation {reservation_id} status updated to COOKING")
         else:
-            DEPENDENCY_FAILURES.labels(
-                service="kitchen_service",
-                dependency="redis"
-            ).inc()
             logging.warning(f"Reservation {reservation_id} not found in Redis")
         
         # Notify that order is cooked
